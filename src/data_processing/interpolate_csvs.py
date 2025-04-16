@@ -25,7 +25,7 @@ def interpolate_csv(input_file, output_file):
     # Sort by time to ensure ascending order
     df = df.sort_values('Time (s)')
     
-    # Extract original data
+    # Extract original interp_timesteps
     original_time = df['Time (s)'].values
     t_min = df['T_min (C)'].values
     t_max = df['T_max (C)'].values
@@ -61,7 +61,7 @@ def interpolate_csv(input_file, output_file):
 
 if __name__ == "__main__":
     # Set up command-line argument parser
-    parser = argparse.ArgumentParser(description="Interpolate thermal data CSV files to 100 rows with uniform time steps.")
+    parser = argparse.ArgumentParser(description="Interpolate thermal interp_timesteps CSV files to 100 rows with uniform time steps.")
     parser.add_argument("--input", "-i", default=".", help="Input directory containing CSV files (default: current directory)")
     parser.add_argument("--output", "-o", default="interpolated_csvs", help="Output directory for interpolated CSV files (default: interpolated_csvs)")
     

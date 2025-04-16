@@ -5,7 +5,7 @@ from pathlib import Path
 
 def extract_thermal_data(input_dir='.', output_dir='cleaned_csv_output'):
 	"""
-	Extract thermal storage data from Excel files with complex structures, adding an initial row at time=0.
+	Extract thermal storage interp_timesteps from Excel files with complex structures, adding an initial row at time=0.
 	
 	Args:
 		input_dir (str): Directory containing Excel files
@@ -43,7 +43,7 @@ def extract_thermal_data(input_dir='.', output_dir='cleaned_csv_output'):
 			print(f"  Processing sheet: {sheet_name}")
 			
 			try:
-				# Read the entire sheet without headers to search for data
+				# Read the entire sheet without headers to search for interp_timesteps
 				df_raw = pd.read_excel(xlsx_file, sheet_name=sheet_name, header=None)
 				
 				# --- Step 1: Extract Initial Temperature ---
@@ -111,7 +111,7 @@ def extract_thermal_data(input_dir='.', output_dir='cleaned_csv_output'):
 							break
 				
 				if time_row_idx is None:
-					print(f"    Warning: Could not find time data in sheet {sheet_name}. Skipping.")
+					print(f"    Warning: Could not find time interp_timesteps in sheet {sheet_name}. Skipping.")
 					continue
 				
 				if time_row_idx == -1:
@@ -223,7 +223,7 @@ def extract_thermal_data(input_dir='.', output_dir='cleaned_csv_output'):
 				cleaned_df = cleaned_df.dropna()
 				
 				if len(cleaned_df) == 0:
-					print(f"    Warning: No valid data found in sheet {sheet_name} after processing.")
+					print(f"    Warning: No valid interp_timesteps found in sheet {sheet_name} after processing.")
 					continue
 				
 				# Create output filename
@@ -233,7 +233,7 @@ def extract_thermal_data(input_dir='.', output_dir='cleaned_csv_output'):
 				
 				# Write to CSV
 				cleaned_df.to_csv(output_path, index=False)
-				print(f"    Successfully extracted {len(cleaned_df)} data points to: {output_path}")
+				print(f"    Successfully extracted {len(cleaned_df)} interp_timesteps points to: {output_path}")
 				
 			except Exception as e:
 				print(f"    Error processing sheet {sheet_name}: {str(e)}")
@@ -245,7 +245,7 @@ def extract_thermal_data(input_dir='.', output_dir='cleaned_csv_output'):
 if __name__ == "__main__":
 	import argparse
 	
-	parser = argparse.ArgumentParser(description="Extract thermal storage data from Excel files")
+	parser = argparse.ArgumentParser(description="Extract thermal storage interp_timesteps from Excel files")
 	parser.add_argument("--input", "-i", default=".", help="Input directory containing Excel files")
 	parser.add_argument("--output", "-o", default="cleaned_csv_output", help="Output directory for cleaned CSV files")
 	

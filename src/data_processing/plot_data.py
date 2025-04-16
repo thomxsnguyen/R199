@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Specify the folder path (change this if your CSV files are located elsewhere)
-folder_path = 'data/train'  # current directory
+folder_path = '../models/data/interp_timesteps/train'  # current directory
 
 # Loop through all files in the folder
 for file in os.listdir(folder_path):

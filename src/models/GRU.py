@@ -15,7 +15,8 @@ class ThermalDataset(Dataset):
         self.file_name = os.path.basename(csv_file)
         df = pd.read_csv(csv_file)
         df["FileName"] = self.file_name
-
+        self.original_time_diff = df["Time (s)"].diff().dropna().values
+        print(f"Original Δt in {self.file_name}: {self.original_time_diff}")
         columns_for_scaling = ["Time (s)", "T_min (C)", "T_max (C)", "T_ave (C)", "Thermal_Input (C)"]
         if scaler is None:
             self.scaler = MinMaxScaler()
@@ -96,11 +97,12 @@ def weighted_loss(predictions, targets, weights=torch.tensor([1.0, 1.0]), time_w
 
 def train_model():
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    train_paths = glob.glob(os.path.join(script_dir, "data", "train", "*.csv"))
-    val_paths = glob.glob(os.path.join(script_dir, "data", "validation", "*.csv"))
-    test_paths = glob.glob(os.path.join(script_dir, "data", "testing", "*.csv"))
 
-    train_dfs = [pd.read_csv(path) for path in train_paths]
+    train_paths = glob.glob(os.path.join(script_dir, "interp_timesteps", "train", "*.csv"))
+    val_paths = glob.glob(os.path.join(script_dir, "interp_timesteps", "validation", "*.csv"))
+    test_paths = glob.glob(os.path.join(script_dir, "interp_timesteps", "testing", "*.csv"))
+
+
     combined_train_df = pd.concat(train_dfs, ignore_index=True)
     columns_for_scaling = ["Time (s)", "T_min (C)", "T_max (C)", "T_ave (C)", "Thermal_Input (C)"]
     scaler = MinMaxScaler()
@@ -120,6 +122,7 @@ def train_model():
     model = ThermalGRU(input_size=4).to(device)
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=50)
+
 
     num_epochs = 100
     patience = 300
