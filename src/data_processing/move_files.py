@@ -3,9 +3,9 @@ import shutil
 import random
 
 # Define the source and target directories
-source_dir = '../models/data/interp_timesteps/csvs_interpolated'
-training_dir = '../models/data/interp_timesteps/train'
-validation_dir = '../models/data/interp_timesteps/validation'
+source_dir = '../models/data/interpolated_csvs(70s)'
+training_dir = '../models/data/train(70s)'
+validation_dir = '../models/data/validation(70s)'
 
 # Create target directories if they don't exist
 os.makedirs(training_dir, exist_ok=True)
