@@ -16,7 +16,7 @@ class ThermalDataset(Dataset):
         df = pd.read_csv(csv_file)
         df["FileName"] = self.file_name
 
-        columns_for_scaling = ["Time (s)", "T_min (C)", "T_max (C)", "T_ave (C)", "Thermal_Input (C)"]
+        columns_for_scaling = ["Time (s)", "T_min (C)", "T_max (C)", "T_ave (C)", "Thermal Input (C)"]
         if scaler is None:
             self.scaler = MinMaxScaler()
             self.scaler.fit(df[columns_for_scaling])

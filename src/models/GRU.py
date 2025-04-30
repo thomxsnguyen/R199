@@ -12,12 +12,22 @@ from sklearn.metrics import mean_absolute_percentage_error, r2_score
 
 class ThermalDataset(Dataset):
     def __init__(self, csv_file, scaler=None):
+        # unify the thermal‐input column name
         self.file_name = os.path.basename(csv_file)
         df = pd.read_csv(csv_file)
+        if "Thermal Input (C)" in df.columns:
+            df.rename(columns={"Thermal Input (C)": "Thermal_Input (C)"}, inplace=True)
+
         df["FileName"] = self.file_name
         self.original_time_diff = df["Time (s)"].diff().dropna().values
 
-        columns_for_scaling = ["Time (s)", "T_min (C)", "T_max (C)", "T_ave (C)", "Thermal_Input (C)"]
+        columns_for_scaling = [
+            "Time (s)",
+            "T_min (C)",
+            "T_max (C)",
+            "T_ave (C)",
+            "Thermal_Input (C)",
+        ]
         if scaler is None:
             self.scaler = MinMaxScaler()
             self.scaler.fit(df[columns_for_scaling])
@@ -92,7 +102,7 @@ def weighted_loss(predictions, targets, weights=torch.tensor([1.0, 1.0]), time_w
     loss = torch.abs(predictions - targets) * weights
     if time_weights is not None:
         time_weights = time_weights.to(predictions.device)
-        loss = loss * time_weights.unsqueeze(-1)  # Apply time-based weighting
+        loss = loss * time_weights.unsqueeze(-1)
     return torch.mean(loss)
 
 def train_model():
@@ -101,8 +111,16 @@ def train_model():
     train_paths = glob.glob(os.path.join(script_dir, "data", "train(70s)", "*.csv"))
     val_paths = glob.glob(os.path.join(script_dir, "data", "validation(70s)", "*.csv"))
     test_paths = glob.glob(os.path.join(script_dir, "data", "testing", "*.csv"))
-    train_dfs = [pd.read_csv(path) for path in train_paths]
+
+    # read all train CSVs, then unify column name before fitting the scaler
+    train_dfs = []
+    for path in train_paths:
+        df = pd.read_csv(path)
+        if "Thermal Input (C)" in df.columns:
+            df.rename(columns={"Thermal Input (C)": "Thermal_Input (C)"}, inplace=True)
+        train_dfs.append(df)
     combined_train_df = pd.concat(train_dfs, ignore_index=True)
+
     columns_for_scaling = ["Time (s)", "T_min (C)", "T_max (C)", "T_ave (C)", "Thermal_Input (C)"]
     scaler = MinMaxScaler()
     scaler.fit(combined_train_df[columns_for_scaling])
@@ -121,7 +139,6 @@ def train_model():
     model = ThermalGRU(input_size=4).to(device)
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=50)
-
 
     num_epochs = 100
     patience = 300
@@ -270,7 +287,7 @@ def test_model(model, test_datasets):
                     current_t_min = prediction[0]
                     current_t_ave = prediction[1]
                 else:
-                    current_t_min = test_input[t+1, 1]  # Use ground truth during burn-in
+                    current_t_min = test_input[t+1, 1]
                     current_t_ave = test_input[t+1, 2]
 
         predicted_sequence = np.array(predictions)
@@ -313,3 +330,4 @@ def test_model(model, test_datasets):
 if __name__ == "__main__":
     trained_model, test_datasets = train_model()
     test_model(trained_model, test_datasets)
+    
