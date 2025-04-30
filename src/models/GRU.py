@@ -144,7 +144,7 @@ def train_model():
     patience = 300
     best_val_loss = float('inf')
     early_stop_counter = 0
-    burn_in_steps = 5 # Warm-up period
+    burn_in_steps = 40 # Warm-up period
 
     for epoch in range(num_epochs):
         model.train()
@@ -169,7 +169,7 @@ def train_model():
             current_t_ave = inputs[:, 0, 2]
 
             # Time-based weights: higher for initial steps, decaying linearly
-            time_weights = torch.linspace(1.5, 1, seq_len, device=device)
+            time_weights = torch.linspace(1.5, 0, seq_len, device=device)
 
             for t in range(seq_len):
                 time_t = inputs[:, t, 0]
@@ -312,9 +312,7 @@ def test_model(model, test_datasets):
         t_min_pred_original = inv_pred[:, 1]
         t_ave_pred_original = inv_pred[:, 3]
 
-        r2_t_min = r2_score(full_t_min_original[1:], t_min_pred_original)
-        r2_t_ave = r2_score(full_t_ave_original[1:], t_ave_pred_original)
-        print(f"R² Scores for {actual_name}:\n  T_min: {r2_t_min:.3f}\n  T_ave: {r2_t_ave:.3f}")
+
 
         ax.plot(full_time_original, full_t_min_original, label="T_min (Actual)", color="blue")
         ax.plot(full_time_original[1:], t_min_pred_original, label="T_min (Predicted)", linestyle="dashed", color="blue")
