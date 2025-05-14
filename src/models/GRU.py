@@ -23,9 +23,9 @@ class ThermalDataset(Dataset):
 
         columns_for_scaling = [
             "Time (s)",
-            "T_min (C)",
-            "T_max (C)",
-            "T_ave (C)",
+            "T_outer (C)",
+            "T_inner (C)",
+            "T_avg (C)",
             "Thermal_Input (C)",
         ]
         if scaler is None:
@@ -41,8 +41,8 @@ class ThermalDataset(Dataset):
         self.full_time, self.full_t_min, self.full_t_max, self.full_t_ave = [], [], [], []
 
         for _, group in grouped:
-            X_seq = group[["Time (s)", "T_min (C)", "T_ave (C)", "Thermal_Input (C)"]].values[:-1]
-            Y_seq = group[["T_min (C)", "T_ave (C)"]].values[1:]
+            X_seq = group[["Time (s)", "T_outer (C)", "T_avg (C)", "Thermal_Input (C)"]].values[:-1]
+            Y_seq = group[["T_outer (C)", "T_avg (C)"]].values[1:]
             time_vals = group["Time (s)"].values[1:]
             thermal_input = group["Thermal_Input (C)"].values[:-1]
 
@@ -51,9 +51,9 @@ class ThermalDataset(Dataset):
             self.time_values.append(time_vals)
             self.thermal_input_full.append(thermal_input)
             self.full_time.append(group["Time (s)"].values)
-            self.full_t_min.append(group["T_min (C)"].values)
-            self.full_t_max.append(group["T_max (C)"].values)
-            self.full_t_ave.append(group["T_ave (C)"].values)
+            self.full_t_min.append(group["T_outer (C)"].values)
+            self.full_t_max.append(group["T_inner (C)"].values)
+            self.full_t_ave.append(group["T_avg (C)"].values)
 
         self.X = torch.tensor(np.array(self.X), dtype=torch.float32)
         self.Y = torch.tensor(np.array(self.Y), dtype=torch.float32)
@@ -80,7 +80,7 @@ class ThermalDataset(Dataset):
         )
 
 class ThermalGRU(nn.Module):
-    def __init__(self, input_size=4, hidden_size=48, output_size=2, num_layers=4):
+    def __init__(self, input_size=4, hidden_size=128, output_size=2, num_layers=5):
         super(ThermalGRU, self).__init__()
         self.hidden_size = hidden_size
         self.num_layers = num_layers
@@ -121,7 +121,7 @@ def train_model():
         train_dfs.append(df)
     combined_train_df = pd.concat(train_dfs, ignore_index=True)
 
-    columns_for_scaling = ["Time (s)", "T_min (C)", "T_max (C)", "T_ave (C)", "Thermal_Input (C)"]
+    columns_for_scaling = ["Time (s)", "T_outer (C)", "T_inner (C)", "T_avg (C)", "Thermal_Input (C)"]
     scaler = MinMaxScaler()
     scaler.fit(combined_train_df[columns_for_scaling])
 
@@ -144,7 +144,7 @@ def train_model():
     patience = 300
     best_val_loss = float('inf')
     early_stop_counter = 0
-    burn_in_steps = 40 # Warm-up period
+    burn_in_steps = int(1443 * .1) # Warm-up period
 
     for epoch in range(num_epochs):
         model.train()
@@ -306,8 +306,8 @@ def test_model(model, test_datasets):
         full_t_ave_original = scaler.inverse_transform(dummy)[:, 3]
 
         dummy_pred = np.zeros((len(t_min_pred), 5))
-        dummy_pred[:, 1] = t_min_pred
-        dummy_pred[:, 3] = t_ave_pred
+        dummy_pred[:, 1] = t_min_pred  # T_outer (C)
+        dummy_pred[:, 3] = t_ave_pred  # T_avg (C)
         inv_pred = scaler.inverse_transform(dummy_pred)
         t_min_pred_original = inv_pred[:, 1]
         t_ave_pred_original = inv_pred[:, 3]
