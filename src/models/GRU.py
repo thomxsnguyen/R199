@@ -15,10 +15,20 @@ class ThermalDataset(Dataset):
         # unify the thermal‐input column name
         self.file_name = os.path.basename(csv_file)
         df = pd.read_csv(csv_file)
+        df.columns = df.columns.str.strip()  # remove leading/trailing spaces
+
+        # unify all possible thermal input column names
         if "Input Temperature (C)" in df.columns:
             df.rename(columns={"Input Temperature (C)": "Thermal_Input (C)"}, inplace=True)
+        if "Thermal Input (C)" in df.columns:
+            df.rename(columns={"Thermal Input (C)": "Thermal_Input (C)"}, inplace=True)
+
         if "T_avg (C)" in df.columns:
             df.rename(columns={"T_avg (C)": "T_ave (C)"}, inplace=True)
+        if "T_min (C)" in df.columns:
+            df.rename(columns={"T_min (C)": "T_outer (C)"}, inplace=True)
+        if "T_max (C)" in df.columns:
+            df.rename(columns={"T_max (C)": "T_inner (C)"}, inplace=True)
         df["FileName"] = self.file_name
         self.original_time_diff = df["Time (s)"].diff().dropna().values
 
@@ -109,18 +119,28 @@ def weighted_loss(predictions, targets, weights=torch.tensor([1.0, 1.0]), time_w
 def train_model():
     script_dir = os.path.dirname(os.path.abspath(__file__))
 
-    train_paths = glob.glob(os.path.join(script_dir, "data", "600s", "train", "*.csv"))
-    val_paths = glob.glob(os.path.join(script_dir, "data", "600s", "validation", "*.csv"))
-    test_paths = glob.glob(os.path.join(script_dir, "data", "600s", "testing", "*.csv"))
+    train_paths = glob.glob(os.path.join(script_dir, "data", "180s", "train", "*.csv"))
+    val_paths = glob.glob(os.path.join(script_dir, "data", "180s", "validation", "*.csv"))
+    test_paths = glob.glob(os.path.join(script_dir, "data", "180s", "testing", "*.csv"))
 
     # read all train CSVs, then unify column name before fitting the scaler
     train_dfs = []
     for path in train_paths:
         df = pd.read_csv(path)
+        df.columns = df.columns.str.strip()  # remove leading/trailing spaces
+
+        # unify all possible thermal input column names
         if "Input Temperature (C)" in df.columns:
             df.rename(columns={"Input Temperature (C)": "Thermal_Input (C)"}, inplace=True)
+        if "Thermal Input (C)" in df.columns:
+            df.rename(columns={"Thermal Input (C)": "Thermal_Input (C)"}, inplace=True)
+
         if "T_avg (C)" in df.columns:
             df.rename(columns={"T_avg (C)": "T_ave (C)"}, inplace=True)
+        if "T_min (C)" in df.columns:
+            df.rename(columns={"T_min (C)": "T_outer (C)"}, inplace=True)
+        if "T_max (C)" in df.columns:
+            df.rename(columns={"T_max (C)": "T_inner (C)"}, inplace=True)
         train_dfs.append(df)
     combined_train_df = pd.concat(train_dfs, ignore_index=True)
 
@@ -143,7 +163,7 @@ def train_model():
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=50)
 
-    num_epochs = 100
+    num_epochs = 300
     patience = 300
     best_val_loss = float('inf')
     early_stop_counter = 0
@@ -172,6 +192,7 @@ def train_model():
             current_t_ave = inputs[:, 0, 2]
 
             # Time-based weights: higher for initial steps, decaying linearly
+            decay_rate = 0.1
             time_weights = torch.linspace(1.5, 0, seq_len, device=device)
 
             for t in range(seq_len):
@@ -327,6 +348,16 @@ def test_model(model, test_datasets):
         ax.legend()
         ax.set_title(f"Actual vs. Predicted for {actual_name}")
         all_figures.append(fig)
+        t_min_mape = mean_absolute_percentage_error(full_t_min_original[1:], t_min_pred_original) * 100
+        t_ave_mape = mean_absolute_percentage_error(full_t_ave_original[1:], t_ave_pred_original) * 100
+
+        t_min_r2 = r2_score(full_t_min_original[1:], t_min_pred_original)
+        t_ave_r2 = r2_score(full_t_ave_original[1:], t_ave_pred_original)
+
+        # Print results
+        print(f"\nPerformance for {actual_name}:")
+        print(f"  T_min MAPE: {t_min_mape:.2f}% | R²: {t_min_r2:.4f}")
+        print(f"  T_ave MAPE: {t_ave_mape:.2f}% | R²: {t_ave_r2:.4f}")
 
     for fig in all_figures:
         plt.figure(fig.number)
