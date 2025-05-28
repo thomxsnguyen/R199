@@ -3,9 +3,9 @@ import shutil
 import random
 
 # Define the source and target directories
-source_dir = 'data/csvs_interpolated(10s)'
-training_dir = 'data/train(10s)'
-validation_dir = 'data/validation(10s)'
+source_dir = 'data/csvs_interpolated'
+training_dir = 'data/train'
+validation_dir = 'data/validation'
 
 
 

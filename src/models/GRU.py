@@ -15,9 +15,10 @@ class ThermalDataset(Dataset):
         # unify the thermal‐input column name
         self.file_name = os.path.basename(csv_file)
         df = pd.read_csv(csv_file)
-        if "Thermal Input (C)" in df.columns:
-            df.rename(columns={"Thermal Input (C)": "Thermal_Input (C)"}, inplace=True)
-
+        if "Input Temperature (C)" in df.columns:
+            df.rename(columns={"Input Temperature (C)": "Thermal_Input (C)"}, inplace=True)
+        if "T_avg (C)" in df.columns:
+            df.rename(columns={"T_avg (C)": "T_ave (C)"}, inplace=True)
         df["FileName"] = self.file_name
         self.original_time_diff = df["Time (s)"].diff().dropna().values
 
@@ -25,7 +26,7 @@ class ThermalDataset(Dataset):
             "Time (s)",
             "T_outer (C)",
             "T_inner (C)",
-            "T_avg (C)",
+            "T_ave (C)",
             "Thermal_Input (C)",
         ]
         if scaler is None:
@@ -41,8 +42,8 @@ class ThermalDataset(Dataset):
         self.full_time, self.full_t_min, self.full_t_max, self.full_t_ave = [], [], [], []
 
         for _, group in grouped:
-            X_seq = group[["Time (s)", "T_outer (C)", "T_avg (C)", "Thermal_Input (C)"]].values[:-1]
-            Y_seq = group[["T_outer (C)", "T_avg (C)"]].values[1:]
+            X_seq = group[["Time (s)", "T_outer (C)", "T_ave (C)", "Thermal_Input (C)"]].values[:-1]
+            Y_seq = group[["T_outer (C)", "T_ave (C)"]].values[1:]
             time_vals = group["Time (s)"].values[1:]
             thermal_input = group["Thermal_Input (C)"].values[:-1]
 
@@ -53,7 +54,7 @@ class ThermalDataset(Dataset):
             self.full_time.append(group["Time (s)"].values)
             self.full_t_min.append(group["T_outer (C)"].values)
             self.full_t_max.append(group["T_inner (C)"].values)
-            self.full_t_ave.append(group["T_avg (C)"].values)
+            self.full_t_ave.append(group["T_ave (C)"].values)
 
         self.X = torch.tensor(np.array(self.X), dtype=torch.float32)
         self.Y = torch.tensor(np.array(self.Y), dtype=torch.float32)
@@ -108,20 +109,22 @@ def weighted_loss(predictions, targets, weights=torch.tensor([1.0, 1.0]), time_w
 def train_model():
     script_dir = os.path.dirname(os.path.abspath(__file__))
 
-    train_paths = glob.glob(os.path.join(script_dir, "data", "train(10s)", "*.csv"))
-    val_paths = glob.glob(os.path.join(script_dir, "data", "validation(10s)", "*.csv"))
-    test_paths = glob.glob(os.path.join(script_dir, "data", "testing(10s)", "*.csv"))
+    train_paths = glob.glob(os.path.join(script_dir, "data", "600s", "train", "*.csv"))
+    val_paths = glob.glob(os.path.join(script_dir, "data", "600s", "validation", "*.csv"))
+    test_paths = glob.glob(os.path.join(script_dir, "data", "600s", "testing", "*.csv"))
 
     # read all train CSVs, then unify column name before fitting the scaler
     train_dfs = []
     for path in train_paths:
         df = pd.read_csv(path)
-        if "Thermal Input (C)" in df.columns:
-            df.rename(columns={"Thermal Input (C)": "Thermal_Input (C)"}, inplace=True)
+        if "Input Temperature (C)" in df.columns:
+            df.rename(columns={"Input Temperature (C)": "Thermal_Input (C)"}, inplace=True)
+        if "T_avg (C)" in df.columns:
+            df.rename(columns={"T_avg (C)": "T_ave (C)"}, inplace=True)
         train_dfs.append(df)
     combined_train_df = pd.concat(train_dfs, ignore_index=True)
 
-    columns_for_scaling = ["Time (s)", "T_outer (C)", "T_inner (C)", "T_avg (C)", "Thermal_Input (C)"]
+    columns_for_scaling = ["Time (s)", "T_outer (C)", "T_inner (C)", "T_ave (C)", "Thermal_Input (C)"]
     scaler = MinMaxScaler()
     scaler.fit(combined_train_df[columns_for_scaling])
 
