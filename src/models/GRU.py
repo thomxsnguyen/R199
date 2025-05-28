@@ -108,9 +108,9 @@ def weighted_loss(predictions, targets, weights=torch.tensor([1.0, 1.0]), time_w
 def train_model():
     script_dir = os.path.dirname(os.path.abspath(__file__))
 
-    train_paths = glob.glob(os.path.join(script_dir, "data", "train", "*.csv"))
-    val_paths = glob.glob(os.path.join(script_dir, "data", "validation", "*.csv"))
-    test_paths = glob.glob(os.path.join(script_dir, "data", "testing", "*.csv"))
+    train_paths = glob.glob(os.path.join(script_dir, "data", "train(10s)", "*.csv"))
+    val_paths = glob.glob(os.path.join(script_dir, "data", "validation(10s)", "*.csv"))
+    test_paths = glob.glob(os.path.join(script_dir, "data", "testing(10s)", "*.csv"))
 
     # read all train CSVs, then unify column name before fitting the scaler
     train_dfs = []
@@ -144,7 +144,7 @@ def train_model():
     patience = 300
     best_val_loss = float('inf')
     early_stop_counter = 0
-    burn_in_steps = int(1443 * .1) # Warm-up period
+    burn_in_steps = 5 # Warm-up period
 
     for epoch in range(num_epochs):
         model.train()
