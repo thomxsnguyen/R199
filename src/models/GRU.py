@@ -163,7 +163,7 @@ def train_model():
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=50)
 
-    num_epochs = 300
+    num_epochs = 50
     patience = 300
     best_val_loss = float('inf')
     early_stop_counter = 0
@@ -354,10 +354,12 @@ def test_model(model, test_datasets):
         t_min_r2 = r2_score(full_t_min_original[1:], t_min_pred_original)
         t_ave_r2 = r2_score(full_t_ave_original[1:], t_ave_pred_original)
 
-        # Print results
-        print(f"\nPerformance for {actual_name}:")
-        print(f"  T_min MAPE: {t_min_mape:.2f}% | R²: {t_min_r2:.4f}")
-        print(f"  T_ave MAPE: {t_ave_mape:.2f}% | R²: {t_ave_r2:.4f}")
+        t_min_accuracy = (1 - t_min_mape / 100) * 100
+        t_ave_accuracy = (1 - t_ave_mape / 100) * 100
+
+        # Print with accuracy included
+        print(f"  T_min MAPE: {t_min_mape:.2f}% | R²: {t_min_r2:.4f} | Accuracy: {t_min_accuracy:.2f}%")
+        print(f"  T_ave MAPE: {t_ave_mape:.2f}% | R²: {t_ave_r2:.4f} | Accuracy: {t_ave_accuracy:.2f}%")
 
     for fig in all_figures:
         plt.figure(fig.number)
