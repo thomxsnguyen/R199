@@ -163,11 +163,11 @@ def train_model():
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=50)
 
-    num_epochs = 50
+    num_epochs = 200
     patience = 300
     best_val_loss = float('inf')
     early_stop_counter = 0
-    burn_in_steps = 5 # Warm-up period
+    burn_in_steps = 15 # Warm-up period
 
     for epoch in range(num_epochs):
         model.train()
@@ -264,8 +264,8 @@ def train_model():
                 print("Early stopping triggered.")
                 break
 
-        if (epoch + 1) % 100 == 0:
-            print(f"[Epoch {epoch+1}/{num_epochs}] Train Loss: {epoch_train_loss:.4f}, Val Loss: {epoch_val_loss:.4f}")
+        print(f"[Epoch {epoch+1}/{num_epochs}] Train Loss: {epoch_train_loss:.4f}, Val Loss: {epoch_val_loss:.4f}")
+
 
     model.load_state_dict(torch.load(os.path.join(script_dir, "best_model.pth")))
     return model, test_datasets
